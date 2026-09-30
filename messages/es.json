@@ -1,0 +1,51 @@
+{
+  "app": {
+    "name": "NextBest"
+  },
+  "language": {
+    "label": "Idioma",
+    "ru": "Русский",
+    "es": "Español"
+  },
+  "common": {
+    "players": "{count, plural, one {# jugador} other {# jugadores}}",
+    "tables": "{count, plural, one {# mesa} other {# mesas}}",
+    "played": "Partidos jugados: {played} de {total}",
+    "newTournament": "Nuevo torneo"
+  },
+  "setup": {
+    "title": "Nuevo torneo",
+    "playersLabel": "Jugadores",
+    "playersHint": "Uno por línea o separados por comas",
+    "countOk": "{count, plural, one {# jugador} other {# jugadores}}",
+    "countTooFew": "{count, plural, one {# jugador} other {# jugadores}}: añade al menos {min}",
+    "countTooMany": "{count, plural, one {# jugador} other {# jugadores}}: máximo {max}",
+    "duplicates": "{count, plural, one {Se quitó # nombre repetido} other {Se quitaron # nombres repetidos}}",
+    "tablesLabel": "Número de mesas",
+    "fewerTables": "Menos mesas",
+    "moreTables": "Más mesas",
+    "tablesInvalid": "Escribe un número del {min} al {max}",
+    "start": "Empezar torneo"
+  },
+  "resume": {
+    "title": "Hay un torneo guardado",
+    "continue": "Continuar torneo"
+  },
+  "confirmNew": {
+    "question": "¿Empezar un torneo nuevo? El actual se borrará.",
+    "yes": "Sí, empezar uno nuevo",
+    "cancel": "Cancelar"
+  },
+  "recover": {
+    "title": "No se pudo recuperar el torneo",
+    "body": "Los datos guardados están dañados o son de otra versión de la aplicación."
+  },
+  "storage": {
+    "unavailable": "Este navegador no guarda datos. Si recargas la página, el torneo se perderá.",
+    "saveFailed": "No se pudo guardar el torneo en este dispositivo. No recargues la página."
+  },
+  "started": {
+    "title": "El torneo ha empezado",
+    "placeholder": "La pantalla de mesas llegará en el siguiente paso del desarrollo."
+  }
+}

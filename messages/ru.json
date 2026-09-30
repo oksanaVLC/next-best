@@ -1,0 +1,51 @@
+{
+  "app": {
+    "name": "NextBest"
+  },
+  "language": {
+    "label": "Язык",
+    "ru": "Русский",
+    "es": "Español"
+  },
+  "common": {
+    "players": "{count, plural, one {# игрок} few {# игрока} many {# игроков} other {# игрока}}",
+    "tables": "{count, plural, one {# стол} few {# стола} many {# столов} other {# стола}}",
+    "played": "Сыграно матчей: {played} из {total}",
+    "newTournament": "Новый турнир"
+  },
+  "setup": {
+    "title": "Новый турнир",
+    "playersLabel": "Игроки",
+    "playersHint": "По одному в строке или через запятую",
+    "countOk": "{count, plural, one {# игрок} few {# игрока} many {# игроков} other {# игрока}}",
+    "countTooFew": "{count, plural, one {# игрок} few {# игрока} many {# игроков} other {# игрока}} — добавьте минимум {min}",
+    "countTooMany": "{count, plural, one {# игрок} few {# игрока} many {# игроков} other {# игрока}} — максимум {max}",
+    "duplicates": "{count, plural, one {Убран # повтор} few {Убрано # повтора} many {Убрано # повторов} other {Убрано # повтора}}",
+    "tablesLabel": "Количество столов",
+    "fewerTables": "Меньше столов",
+    "moreTables": "Больше столов",
+    "tablesInvalid": "Введите число от {min} до {max}",
+    "start": "Начать турнир"
+  },
+  "resume": {
+    "title": "Есть сохранённый турнир",
+    "continue": "Продолжить турнир"
+  },
+  "confirmNew": {
+    "question": "Начать новый турнир? Текущий будет удалён.",
+    "yes": "Да, начать новый",
+    "cancel": "Отмена"
+  },
+  "recover": {
+    "title": "Не удалось восстановить турнир",
+    "body": "Сохранённые данные повреждены или записаны другой версией приложения."
+  },
+  "storage": {
+    "unavailable": "Этот браузер не сохраняет данные. Если обновить страницу, турнир пропадёт.",
+    "saveFailed": "Не удалось сохранить турнир на этом устройстве. Не обновляйте страницу."
+  },
+  "started": {
+    "title": "Турнир начался",
+    "placeholder": "Экран со столами появится на следующем шаге разработки."
+  }
+}
