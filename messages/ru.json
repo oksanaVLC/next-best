@@ -54,9 +54,17 @@
     "versus": "против",
     "winsAt": "{name} выигрывает, стол {table}",
     "waitingTitle": "Ждут стол",
-    "waitingNone": "Никто не ждёт",
     "matchup": "{a} против {b}",
-    "waitingMore": "{count, plural, one {и ещё # матч} few {и ещё # матча} many {и ещё # матчей} other {и ещё # матча}}"
+    "waitingMore": "{count, plural, one {и ещё # матч} few {и ещё # матча} many {и ещё # матчей} other {и ещё # матча}}",
+    "tablesCount": "Столы",
+    "undo": "Отменить",
+    "undoLabel": "Отменить последнее действие",
+    "tableBusy": "Стол {number} ещё играет. Сначала выберите победителя за этим столом.",
+    "resultsTitle": "Результаты",
+    "resultsEmpty": "Нажмите на имя победителя за столом.",
+    "result": "<w>{winner}</w> выиграл(а), <l>{loser}</l> выбыл(а)",
+    "resultWhere": "Стол {table} · {round}",
+    "finished": "Турнир завершён"
   },
   "round": {
     "final": "Финал",
@@ -65,6 +73,8 @@
     "round": "Раунд {round}"
   },
   "champion": {
-    "title": "Чемпион"
+    "title": "Чемпион",
+    "summary": "Турнир завершён: {players, plural, one {# игрок} few {# игрока} many {# игроков} other {# игрока}}, {matches, plural, one {# матч} few {# матча} many {# матчей} other {# матча}}",
+    "final": "Финал: <w>{winner}</w> выиграл(а), <l>{loser}</l> выбыл(а)"
   }
 }

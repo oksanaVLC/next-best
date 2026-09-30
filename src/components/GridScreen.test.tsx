@@ -55,6 +55,7 @@ function openGrid(t: Tournament, history: string[] = []) {
 const tile = (i: number) => screen.getByRole("article", { name: `Стол ${i + 1}` });
 const tiles = () => screen.getAllByRole("article");
 const waitingPanel = () => screen.getByRole("region", { name: "Ждут стол" });
+const noWaitingPanel = () => expect(screen.queryByRole("region", { name: "Ждут стол" })).toBeNull();
 const playerName = (t: Tournament, id: string) => t.players[id].name;
 
 function winButton(t: Tournament, table: number, playerId: string) {
@@ -84,6 +85,7 @@ function expectGridMatches(t: Tournament) {
 }
 
 function expectWaiting(t: Tournament) {
+  if (queue(t).length === 0) return noWaitingPanel(); // the panel is hidden when nothing waits
   const expected = queue(t)
     .slice(0, 6)
     .map((m) => `${playerName(t, m.a!)} против ${playerName(t, m.b!)}`);
@@ -138,7 +140,7 @@ describe("tables grid", () => {
   it("with enough tables nobody waits, and new matches start on the lowest free table", () => {
     let t = tournament(8, 16);
     openGrid(t);
-    expect(within(waitingPanel()).getByText("Никто не ждёт")).toBeTruthy();
+    noWaitingPanel();
     expectGridMatches(t);
 
     for (const table of [0, 1]) {
@@ -151,7 +153,7 @@ describe("tables grid", () => {
     expectGridMatches(t);
     expect(within(tile(0)).getByText("Полуфинал")).toBeTruthy();
     expect(newTables()).toEqual([0]);
-    expect(within(waitingPanel()).getByText("Никто не ждёт")).toBeTruthy();
+    noWaitingPanel();
   });
 });
 
@@ -225,7 +227,7 @@ describe("tapping a winner", () => {
     expect(within(tile(0)).queryAllByRole("button")).toHaveLength(0);
     const buttonNames = screen.getAllByRole("button").map((b) => b.getAttribute("aria-label") ?? b.textContent);
     expect(buttonNames.some((n) => n?.startsWith(`${playerName(t, m.b!)} `))).toBe(false);
-    expect(within(waitingPanel()).queryAllByRole("button")).toHaveLength(0);
+    noWaitingPanel(); // nothing is waiting here
   });
 
   it("NEW moves to the table that received the latest match", () => {

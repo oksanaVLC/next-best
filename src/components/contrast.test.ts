@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { primaryButton, secondaryButton } from "./ui";
+import { primaryButton, secondaryButton, toolPrimary, toolSecondary } from "./ui";
 
 // Resolve the button classes against the real design tokens in globals.css and check
 // CLAUDE.md §7: text contrast of at least 7:1, including the disabled state.
@@ -52,5 +52,31 @@ describe("button contrast (≥ 7:1)", () => {
   it("secondary button", () => {
     const { text, bg } = colors(secondaryButton);
     expect(contrast(text, bg)).toBeGreaterThanOrEqual(7);
+  });
+
+  it("header tools (Undo, table −/+, New), including disabled Undo and −/+", () => {
+    for (const classes of [toolPrimary, toolSecondary]) {
+      const { text, bg } = colors(classes);
+      expect(contrast(text, bg), classes).toBeGreaterThanOrEqual(7);
+    }
+    // Disabled tools keep the white background and switch to muted text.
+    const disabledText = tokens[toolSecondary.match(/disabled:text-([a-z]+)/)![1]];
+    expect(contrast(disabledText, colors(toolSecondary).bg)).toBeGreaterThanOrEqual(7);
+  });
+});
+
+describe("text on the game and champion screens (≥ 7:1)", () => {
+  const pairs: [string, string, string][] = [
+    ["result where-line and struck-out loser: muted on white", "muted", "white"],
+    ["champion name and final: ink on mint", "ink", "mint"],
+    ["waiting heading: lime on ink", "lime", "ink"],
+    ["waiting matches: white on ink", "white", "ink"],
+    ["NEW badge: white on ink", "white", "ink"],
+    ["names on a new (lime) table: ink on lime", "ink", "lime"],
+    ["versus on a new table: muted on lime", "muted", "lime"],
+    ["Free: ink on the free tile", "ink", "free"],
+  ];
+  it.each(pairs)("%s", (_, fg, bg) => {
+    expect(contrast(tokens[fg], tokens[bg])).toBeGreaterThanOrEqual(7);
   });
 });

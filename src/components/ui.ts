@@ -11,6 +11,13 @@ export const primaryButton = `${bigButton} bg-ink text-white disabled:bg-free di
 
 export const secondaryButton = `${bigButton} border-2 border-ink bg-white text-ink`;
 
+const toolButton = "min-h-14 rounded-button px-5 text-xl font-bold leading-tight";
+
+/** Header tools (Undo, table −/+). Disabled keeps 8.9:1 text; the sage border only marks the state. */
+export const toolSecondary = `${toolButton} border-2 border-ink bg-white text-ink disabled:border-sage disabled:text-muted`;
+
+export const toolPrimary = `${toolButton} bg-ink text-white`;
+
 export function cx(...classes: (string | false | null | undefined)[]): string {
   return classes.filter(Boolean).join(" ");
 }

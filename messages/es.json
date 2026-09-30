@@ -54,9 +54,17 @@
     "versus": "contra",
     "winsAt": "{name} gana, mesa {table}",
     "waitingTitle": "Esperan mesa",
-    "waitingNone": "Nadie espera",
     "matchup": "{a} contra {b}",
-    "waitingMore": "{count, plural, one {y # partido más} other {y # partidos más}}"
+    "waitingMore": "{count, plural, one {y # partido más} other {y # partidos más}}",
+    "tablesCount": "Mesas",
+    "undo": "Deshacer",
+    "undoLabel": "Deshacer la última acción",
+    "tableBusy": "La mesa {number} todavía está jugando. Primero elige al ganador en esa mesa.",
+    "resultsTitle": "Resultados",
+    "resultsEmpty": "Toca el nombre del ganador en una mesa.",
+    "result": "<w>{winner}</w> ganó a <l>{loser}</l>",
+    "resultWhere": "Mesa {table} · {round}",
+    "finished": "Torneo terminado"
   },
   "round": {
     "final": "Final",
@@ -65,6 +73,8 @@
     "round": "Ronda {round}"
   },
   "champion": {
-    "title": "Campeón"
+    "title": "Campeón",
+    "summary": "Torneo terminado: {players, plural, one {# jugador} other {# jugadores}}, {matches, plural, one {# partido} other {# partidos}}",
+    "final": "Final: <w>{winner}</w> ganó a <l>{loser}</l>"
   }
 }

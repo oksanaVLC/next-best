@@ -3,12 +3,12 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { IntlProvider, useTranslations } from "use-intl";
 import { createTournament } from "../engine/bracket";
-import { newlyAssignedTables, pickWinner, pushHistory } from "../engine/play";
+import { newlyAssignedTables, pickWinner, pushHistory, setTableCount, undo } from "../engine/play";
 import type { AppState } from "../engine/types";
 import { detectLang, messages, type Lang } from "../i18n";
 import { loadState, saveState } from "../lib/storage";
 import { AppHeader } from "./AppHeader";
-import { ChampionPlaceholder, GridScreen } from "./GridScreen";
+import { GridScreen } from "./GridScreen";
 import { ConfirmNewScreen, RecoverScreen, ResumeScreen } from "./SavedScreens";
 import { SetupScreen } from "./SetupScreen";
 
@@ -32,6 +32,7 @@ type Model = {
   saveFailed: boolean;
   fresh: number[]; // tables that received a match in the last action ("NEW")
   freshAt: number; // when that happened (ms)
+  busyTable: number | null; // table that blocked the last "fewer tables" press (for the message)
 };
 
 const noopSubscribe = () => () => {};
@@ -54,7 +55,7 @@ export default function NextBestApp() {
 
 function initialModel(): Model {
   const blank: AppState = { tournament: null, history: [], lang: detectLang(navigator.languages) };
-  const base = { canSave: true, saveFailed: false, fresh: [], freshAt: 0 };
+  const base = { canSave: true, saveFailed: false, fresh: [], freshAt: 0, busyTable: null };
   const result = loadState();
   switch (result.status) {
     case "ok":
@@ -89,7 +90,7 @@ function LoadedApp() {
   }
 
   function show(nextScreen: Screen) {
-    apply({ ...latest.current, screen: nextScreen, fresh: [] });
+    apply({ ...latest.current, screen: nextScreen, fresh: [], busyTable: null });
   }
 
   function changeLang(lang: Lang) {
@@ -107,6 +108,7 @@ function LoadedApp() {
       screen: { name: "grid" },
       fresh: newlyAssignedTables(null, tournament),
       freshAt: Date.now(),
+      busyTable: null,
     });
   }
 
@@ -121,13 +123,41 @@ function LoadedApp() {
       ...saved(m, { ...m.app, tournament: after, history: pushHistory(m.app.history, before) }),
       fresh: newlyAssignedTables(before, after),
       freshAt: Date.now(),
+      busyTable: null,
     });
+  }
+
+  function changeTables(delta: 1 | -1) {
+    const m = latest.current;
+    const before = m.app.tournament;
+    if (!before) return;
+    const result = setTableCount(before, before.tables.length + delta);
+    if (!result.ok) {
+      // Nothing changes; only explain which table is still playing.
+      if (result.reason === "tableBusy") apply({ ...m, busyTable: result.tables[0] });
+      return;
+    }
+    const after = result.tournament;
+    if (after === before) return;
+    apply({
+      ...saved(m, { ...m.app, tournament: after, history: pushHistory(m.app.history, before) }),
+      fresh: newlyAssignedTables(before, after),
+      freshAt: Date.now(),
+      busyTable: null,
+    });
+  }
+
+  function undoLast() {
+    const m = latest.current;
+    const restored = undo(m.app.history); // never adds history of its own
+    if (!restored) return;
+    apply({ ...saved(m, { ...m.app, ...restored }), fresh: [], busyTable: null });
   }
 
   function startOver() {
     // Also overwrites unreadable data, so the recovery message does not come back.
     const m = latest.current;
-    apply({ ...saved(m, { tournament: null, history: [], lang: m.app.lang }), screen: { name: "setup" }, fresh: [] });
+    apply({ ...saved(m, { tournament: null, history: [], lang: m.app.lang }), screen: { name: "setup" }, fresh: [], busyTable: null });
   }
 
   const onGrid = screen.name === "grid" && app.tournament;
@@ -156,18 +186,18 @@ function LoadedApp() {
             <ConfirmNewScreen onConfirm={startOver} onCancel={() => show({ name: screen.back })} />
           )}
           {screen.name === "recover" && <RecoverScreen onNew={startOver} />}
-          {screen.name === "grid" &&
-            app.tournament &&
-            (app.tournament.champion ? (
-              <ChampionPlaceholder tournament={app.tournament} onNew={() => show({ name: "confirmNew", back: "grid" })} />
-            ) : (
-              <GridScreen
-                tournament={app.tournament}
-                fresh={model.fresh}
-                onPick={pick}
-                onNew={() => show({ name: "confirmNew", back: "grid" })}
-              />
-            ))}
+          {screen.name === "grid" && app.tournament && (
+            <GridScreen
+              tournament={app.tournament}
+              fresh={model.fresh}
+              canUndo={app.history.length > 0}
+              busyTable={model.busyTable}
+              onPick={pick}
+              onTables={changeTables}
+              onUndo={undoLast}
+              onNew={() => show({ name: "confirmNew", back: "grid" })}
+            />
+          )}
         </main>
       </div>
     </IntlProvider>
