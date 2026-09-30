@@ -1,5 +1,4 @@
-// Screens shown around a saved tournament: resume, confirm New, recover, and the temporary
-// placeholder that stands in for the tables grid until Step 4.
+// Screens shown around a saved tournament: resume, confirm New and recover.
 
 import { useId } from "react";
 import { useTranslations } from "use-intl";
@@ -78,24 +77,6 @@ export function RecoverScreen({ onNew }: { onNew: () => void }) {
       </h1>
       <p className="text-xl">{t("recover.body")}</p>
       <button type="button" onClick={onNew} className={primaryButton}>
-        {t("common.newTournament")}
-      </button>
-    </section>
-  );
-}
-
-/** Temporary stand-in for the tables grid (Step 4). */
-export function StartedPlaceholder({ tournament, onNew }: { tournament: Tournament; onNew: () => void }) {
-  const t = useTranslations();
-  const id = useId();
-  return (
-    <section className={card} aria-labelledby={id}>
-      <h1 id={id} className={cardTitle}>
-        {t("started.title")}
-      </h1>
-      <Summary tournament={tournament} />
-      <p className="text-xl text-muted">{t("started.placeholder")}</p>
-      <button type="button" onClick={onNew} className={secondaryButton}>
         {t("common.newTournament")}
       </button>
     </section>

@@ -7,7 +7,7 @@ function keyPaths(value: unknown, prefix = ""): string[] {
   return Object.entries(value).flatMap(([k, v]) => keyPaths(v, prefix ? `${prefix}.${k}` : k));
 }
 
-const PARAMS = { count: 3, min: 5, max: 30, played: 1, total: 11 };
+const PARAMS = { count: 3, min: 5, max: 30, played: 1, total: 11, left: 8, number: 2, table: 2, round: 1, name: "Anna", a: "Anna", b: "Maria" };
 
 describe("messages", () => {
   it("ru and es have exactly the same keys", () => {

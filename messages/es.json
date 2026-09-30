@@ -44,8 +44,27 @@
     "unavailable": "Este navegador no guarda datos. Si recargas la página, el torneo se perderá.",
     "saveFailed": "No se pudo guardar el torneo en este dispositivo. No recargues la página."
   },
-  "started": {
-    "title": "El torneo ha empezado",
-    "placeholder": "La pantalla de mesas llegará en el siguiente paso del desarrollo."
+  "grid": {
+    "title": "Torneo",
+    "status": "Partidos: {played} de {total} · {left, plural, one {queda # jugador} other {quedan # jugadores}}",
+    "tablesLabel": "Mesas",
+    "table": "Mesa {number}",
+    "free": "Libre",
+    "new": "NUEVO",
+    "versus": "contra",
+    "winsAt": "{name} gana, mesa {table}",
+    "waitingTitle": "Esperan mesa",
+    "waitingNone": "Nadie espera",
+    "matchup": "{a} contra {b}",
+    "waitingMore": "{count, plural, one {y # partido más} other {y # partidos más}}"
+  },
+  "round": {
+    "final": "Final",
+    "semifinal": "Semifinal",
+    "quarterfinal": "Cuartos de final",
+    "round": "Ronda {round}"
+  },
+  "champion": {
+    "title": "Campeón"
   }
 }

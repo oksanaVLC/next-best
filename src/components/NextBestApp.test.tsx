@@ -152,9 +152,8 @@ describe("setup form", () => {
     expect(t.tables).toHaveLength(7);
     expect(t.log).toEqual([]);
 
-    expect(screen.getByRole("heading", { name: "Турнир начался" })).toBeTruthy();
-    expect(screen.getByText("12 игроков")).toBeTruthy();
-    expect(screen.getByText("7 столов")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Турнир" })).toBeTruthy();
+    for (let i = 1; i <= 7; i++) expect(screen.getByRole("heading", { name: `Стол ${i}` })).toBeTruthy();
   });
 
   it("uses the first spelling of duplicate names", () => {
@@ -185,7 +184,7 @@ describe("saved tournament", () => {
     expect(screen.queryByRole("textbox")).toBeNull();
 
     click("Продолжить турнир");
-    expect(screen.getByRole("heading", { name: "Турнир начался" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Турнир" })).toBeTruthy();
     expect(localStorage.getItem(STORAGE_KEY)).toBe(before);
   });
 
@@ -209,13 +208,13 @@ describe("saved tournament", () => {
     expect(stored()).toEqual({ tournament: null, history: [], lang: "es" });
   });
 
-  it("the placeholder after Start also leads back to a new tournament", () => {
+  it("the grid also leads back to a new tournament", () => {
     renderApp();
     typeNames(names(6).join("\n"));
     fireEvent.click(startButton());
     click("Новый турнир");
     click("Отмена");
-    expect(screen.getByRole("heading", { name: "Турнир начался" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Турнир" })).toBeTruthy();
     click("Новый турнир");
     click("Да, начать новый");
     expect(namesBox()).toBeTruthy();
@@ -316,7 +315,7 @@ describe("storage problems", () => {
     );
     typeNames(names(5).join("\n"));
     fireEvent.click(startButton());
-    expect(screen.getByRole("heading", { name: "Турнир начался" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Турнир" })).toBeTruthy();
   });
 
   it("warns when saving the new tournament fails", () => {
@@ -326,7 +325,7 @@ describe("storage problems", () => {
     renderApp();
     typeNames(names(5).join("\n"));
     fireEvent.click(startButton());
-    expect(screen.getByRole("heading", { name: "Турнир начался" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Турнир" })).toBeTruthy();
     expect(screen.getByRole("status").textContent).toBe(
       "Не удалось сохранить турнир на этом устройстве. Не обновляйте страницу.",
     );
