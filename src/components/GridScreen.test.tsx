@@ -88,7 +88,7 @@ function expectWaiting(t: Tournament) {
   if (queue(t).length === 0) return noWaitingPanel(); // the panel is hidden when nothing waits
   const expected = queue(t)
     .slice(0, 6)
-    .map((m) => `${playerName(t, m.a!)} против ${playerName(t, m.b!)}`);
+    .map((m) => `${playerName(t, m.a!)} — ${playerName(t, m.b!)}`);
   const items = within(waitingPanel()).queryAllByRole("listitem").map((li) => li.textContent);
   expect(items.slice(0, expected.length)).toEqual(expected);
   expect(within(waitingPanel()).queryAllByRole("button")).toHaveLength(0);
@@ -108,7 +108,7 @@ describe("tables grid", () => {
 
     const t = stored().tournament!;
     expect(screen.getByRole("heading", { name: "Турнир" })).toBeTruthy();
-    expect(screen.getByText("Матчи: 0 из 11 · осталось 12 игроков")).toBeTruthy();
+    expect(screen.getByText("Сыграно матчей: 0 из 11 · осталось 12 игроков")).toBeTruthy();
     expectGridMatches(t);
     expectWaiting(t);
     expect(newTables()).toEqual(t.tables.flatMap((id, i) => (id === null ? [] : [i])));
@@ -177,7 +177,7 @@ describe("tapping a winner", () => {
     expectGridMatches(expected);
     expectWaiting(expected);
     expect(newTables()).toEqual([0]);
-    expect(screen.getByText("Матчи: 1 из 11 · осталось 11 игроков")).toBeTruthy();
+    expect(screen.getByText("Сыграно матчей: 1 из 11 · осталось 11 игроков")).toBeTruthy();
     expect(screen.queryByRole("button", { name: new RegExp(`^${playerName(t, m.a!)} `) })).toBeNull();
   });
 
@@ -261,7 +261,7 @@ describe("restoring and finishing", () => {
     expect(localStorage.getItem(STORAGE_KEY)).toBe(before);
     expectGridMatches(t);
     expectWaiting(t);
-    expect(screen.getByText("Матчи: 3 из 11 · осталось 9 игроков")).toBeTruthy();
+    expect(screen.getByText("Сыграно матчей: 3 из 11 · осталось 9 игроков")).toBeTruthy();
     expect(stored().tournament!.log).toHaveLength(3);
   });
 

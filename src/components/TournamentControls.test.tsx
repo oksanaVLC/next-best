@@ -91,7 +91,7 @@ const waitingItems = () =>
 const expectedWaiting = (t: Tournament) =>
   queue(t)
     .slice(0, 6)
-    .map((m) => `${name(t, m.a!)} против ${name(t, m.b!)}`);
+    .map((m) => `${name(t, m.a!)} — ${name(t, m.b!)}`);
 
 const resultsRegion = () => screen.getByRole("region", { name: "Результаты" });
 function resultRows() {
@@ -165,7 +165,7 @@ describe("waiting matches", () => {
     const after = current();
     expect(after.tables[0]).toBe(first.id);
     expect(waitingItems()).toEqual(expectedWaiting(after));
-    expect(waitingItems()).not.toContain(`${name(t, first.a!)} против ${name(t, first.b!)}`);
+    expect(waitingItems()).not.toContain(`${name(t, first.a!)} — ${name(t, first.b!)}`);
   });
 
   it("the panel is hidden when nothing waits", () => {

@@ -19,7 +19,7 @@
     "playersHint": "Uno por línea o separados por comas",
     "countOk": "{count, plural, one {# jugador} other {# jugadores}}",
     "countTooFew": "{count, plural, one {# jugador} other {# jugadores}}: añade al menos {min}",
-    "countTooMany": "{count, plural, one {# jugador} other {# jugadores}}: máximo {max}",
+    "countTooMany": "{count, plural, one {# jugador} other {# jugadores}}: máximo {max}, quita los que sobren",
     "duplicates": "{count, plural, one {Se quitó # nombre repetido} other {Se quitaron # nombres repetidos}}",
     "tablesLabel": "Número de mesas",
     "fewerTables": "Menos mesas",
@@ -38,7 +38,7 @@
   },
   "recover": {
     "title": "No se pudo recuperar el torneo",
-    "body": "Los datos guardados están dañados o son de otra versión de la aplicación."
+    "body": "Los datos guardados están dañados o son de otra versión de la aplicación. Empieza un torneo nuevo: estos datos se borrarán."
   },
   "storage": {
     "unavailable": "Este navegador no guarda datos. Si recargas la página, el torneo se perderá.",
@@ -46,7 +46,7 @@
   },
   "grid": {
     "title": "Torneo",
-    "status": "Partidos: {played} de {total} · {left, plural, one {queda # jugador} other {quedan # jugadores}}",
+    "status": "Partidos jugados: {played} de {total} · {left, plural, one {queda # jugador} other {quedan # jugadores}}",
     "tablesLabel": "Mesas",
     "table": "Mesa {number}",
     "free": "Libre",

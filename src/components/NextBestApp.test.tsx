@@ -80,7 +80,7 @@ describe("setup form", () => {
       [21, "21 игрок", true],
       [22, "22 игрока", true],
       [30, "30 игроков", true],
-      [31, "31 игрок — максимум 30", false],
+      [31, "31 игрок — максимум 30, уберите лишних", false],
     ];
     for (const [count, text, valid] of cases) {
       typeNames(names(count).join("\n"));
@@ -101,10 +101,10 @@ describe("setup form", () => {
     renderApp();
     typeNames("Anna\nanna\nMaria\nANNA\nSofia\nPeter\nIván");
     expect(screen.getByText("5 игроков")).toBeTruthy();
-    expect(screen.getByText("Убрано 2 повтора")).toBeTruthy();
+    expect(screen.getByText("Убрано 2 повторяющихся имени")).toBeTruthy();
     typeNames("Anna\nanna\nMaria\nSofia\nPeter");
     expect(screen.getByText("4 игрока — добавьте минимум 5")).toBeTruthy();
-    expect(screen.getByText("Убран 1 повтор")).toBeTruthy();
+    expect(screen.getByText("Убрано 1 повторяющееся имя")).toBeTruthy();
     expect(startButton().hasAttribute("disabled")).toBe(true);
   });
 
