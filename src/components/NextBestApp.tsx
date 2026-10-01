@@ -79,6 +79,19 @@ function LoadedApp() {
     document.documentElement.lang = app.lang;
   }, [app.lang]);
 
+  // After a screen change (not on first load), move focus to the new screen's heading, so keyboard
+  // and screen-reader users are not left on a button that no longer exists.
+  const mainRef = useRef<HTMLElement>(null);
+  const firstScreen = useRef(true);
+  const screenKey = `${screen.name}${app.tournament?.champion ? ":champion" : ""}`;
+  useEffect(() => {
+    if (firstScreen.current) {
+      firstScreen.current = false;
+      return;
+    }
+    mainRef.current?.querySelector<HTMLElement>("[data-autofocus]")?.focus();
+  }, [screenKey]);
+
   function apply(next: Model) {
     latest.current = next;
     setModel(next);
@@ -167,6 +180,7 @@ function LoadedApp() {
       <div className="flex min-h-dvh flex-col">
         <AppHeader lang={app.lang} onLangChange={changeLang} />
         <main
+          ref={mainRef}
           className={
             onGrid
               ? "flex flex-1 flex-col items-center gap-4 px-4 pb-8 sm:px-7 sm:pb-7"

@@ -112,11 +112,11 @@ describe("setup form", () => {
     renderApp();
     for (let i = 0; i < 3; i++) fireEvent.click(fewer());
     expect((tablesBox() as HTMLInputElement).value).toBe("1");
-    expect(fewer().hasAttribute("disabled")).toBe(true);
+    expect(fewer().getAttribute("aria-disabled")).toBe("true");
     for (let i = 0; i < 15; i++) fireEvent.click(more());
     expect((tablesBox() as HTMLInputElement).value).toBe("16");
-    expect(more().hasAttribute("disabled")).toBe(true);
-    expect(fewer().hasAttribute("disabled")).toBe(false);
+    expect(more().getAttribute("aria-disabled")).toBe("true");
+    expect(fewer().getAttribute("aria-disabled")).toBe("false");
   });
 
   it("accepts a typed table count and blocks Start for invalid ones", () => {

@@ -6,7 +6,7 @@ import { parseTableInput, stepTableInput } from "../lib/tableInput";
 import { card, cardTitle, cx, primaryButton } from "./ui";
 
 const stepButton =
-  "size-16 shrink-0 rounded-[1.125rem] border-2 border-ink bg-white text-[2.125rem] font-bold leading-none disabled:border-sage disabled:text-muted";
+  "size-16 shrink-0 rounded-[1.125rem] border-2 border-ink bg-white text-[2.125rem] font-bold leading-none aria-disabled:border-sage aria-disabled:text-muted";
 
 export function SetupScreen({ onStart }: { onStart: (names: string[], tables: number) => void }) {
   const t = useTranslations("setup");
@@ -30,7 +30,7 @@ export function SetupScreen({ onStart }: { onStart: (names: string[], tables: nu
 
   return (
     <section className={card} aria-labelledby={`${id}-title`}>
-      <h1 id={`${id}-title`} className={cardTitle}>
+      <h1 id={`${id}-title`} tabIndex={-1} data-autofocus className={cardTitle}>
         {t("title")}
       </h1>
 
@@ -82,7 +82,7 @@ export function SetupScreen({ onStart }: { onStart: (names: string[], tables: nu
               type="button"
               aria-label={t("fewerTables")}
               aria-controls={`${id}-tables`}
-              disabled={tables !== null && tables <= MIN_TABLES}
+              aria-disabled={tables !== null && tables <= MIN_TABLES}
               onClick={() => setTablesText(String(stepTableInput(tablesText, -1)))}
               className={stepButton}
             >
@@ -107,7 +107,7 @@ export function SetupScreen({ onStart }: { onStart: (names: string[], tables: nu
               type="button"
               aria-label={t("moreTables")}
               aria-controls={`${id}-tables`}
-              disabled={tables !== null && tables >= MAX_TABLES}
+              aria-disabled={tables !== null && tables >= MAX_TABLES}
               onClick={() => setTablesText(String(stepTableInput(tablesText, 1)))}
               className={stepButton}
             >

@@ -31,7 +31,7 @@ export function ResumeScreen({
   const id = useId();
   return (
     <section className={card} aria-labelledby={id}>
-      <h1 id={id} className={cardTitle}>
+      <h1 id={id} tabIndex={-1} data-autofocus className={cardTitle}>
         {t("resume.title")}
       </h1>
       <Summary tournament={tournament} />
@@ -52,7 +52,7 @@ export function ConfirmNewScreen({ onConfirm, onCancel }: { onConfirm: () => voi
   const id = useId();
   return (
     <section className={card} aria-labelledby={id}>
-      <h1 id={id} className="text-[1.75rem] font-extrabold leading-tight sm:text-[2rem]">
+      <h1 id={id} tabIndex={-1} data-autofocus className="text-[1.75rem] font-extrabold leading-tight sm:text-[2rem]">
         {t("question")}
       </h1>
       <div className="flex flex-col gap-3">
@@ -72,7 +72,7 @@ export function RecoverScreen({ onNew }: { onNew: () => void }) {
   const id = useId();
   return (
     <section className={card} aria-labelledby={id}>
-      <h1 id={id} className={cardTitle}>
+      <h1 id={id} tabIndex={-1} data-autofocus className={cardTitle}>
         {t("recover.title")}
       </h1>
       <p className="text-xl">{t("recover.body")}</p>

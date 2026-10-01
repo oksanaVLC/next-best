@@ -242,14 +242,14 @@ describe("table count", () => {
 
   it("keeps the count between 1 and 16", () => {
     openGrid(tournament(8, 1));
-    expect(button("Меньше столов").disabled).toBe(true);
+    expect(button("Меньше столов").getAttribute("aria-disabled")).toBe("true");
     const before = raw();
     fireEvent.click(button("Меньше столов"));
     expect(raw()).toBe(before);
 
     cleanup();
     openGrid(tournament(8, 16));
-    expect(button("Больше столов").disabled).toBe(true);
+    expect(button("Больше столов").getAttribute("aria-disabled")).toBe("true");
     const full = raw();
     fireEvent.click(button("Больше столов"));
     expect(raw()).toBe(full);
@@ -263,7 +263,7 @@ describe("undo", () => {
   it("is disabled with no history and does nothing", () => {
     openGrid(tournament(12, 2));
     const before = raw();
-    expect(button("Отменить последнее действие").disabled).toBe(true);
+    expect(button("Отменить последнее действие").getAttribute("aria-disabled")).toBe("true");
     fireEvent.click(button("Отменить последнее действие"));
     expect(raw()).toBe(before);
   });
@@ -290,7 +290,7 @@ describe("undo", () => {
       expect(tableCountShown()).toBe(states[k].tables.length);
       expect(screen.queryByText("НОВЫЙ")).toBeNull();
     }
-    expect(button("Отменить последнее действие").disabled).toBe(true);
+    expect(button("Отменить последнее действие").getAttribute("aria-disabled")).toBe("true");
   });
 
   it("brings an eliminated player back", () => {
@@ -343,7 +343,7 @@ describe("champion screen", () => {
     expect(screen.queryByRole("group", { name: "Количество столов" })).toBeNull();
     expect(screen.queryAllByRole("article")).toHaveLength(0);
     expect(resultRows()).toHaveLength(4);
-    expect(button("Отменить последнее действие").disabled).toBe(false);
+    expect(button("Отменить последнее действие").getAttribute("aria-disabled")).toBe("false");
   });
 
   it("New tournament from the Champion screen clears the tournament and keeps Spanish", () => {
@@ -398,7 +398,7 @@ describe("reload restores", () => {
     reload();
     expect(visibleState()).toEqual(before.state);
     expect(stored().history).toHaveLength(1);
-    expect(button("Отменить последнее действие").disabled).toBe(false);
+    expect(button("Отменить последнее действие").getAttribute("aria-disabled")).toBe("false");
   });
 
   it("the Champion screen", () => {

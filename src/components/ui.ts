@@ -13,8 +13,11 @@ export const secondaryButton = `${bigButton} border-2 border-ink bg-white text-i
 
 const toolButton = "min-h-14 rounded-button px-5 text-xl font-bold leading-tight";
 
-/** Header tools (Undo, table −/+). Disabled keeps 8.9:1 text; the sage border only marks the state. */
-export const toolSecondary = `${toolButton} border-2 border-ink bg-white text-ink disabled:border-sage disabled:text-muted`;
+/**
+ * Header tools (Undo, table −/+). They use aria-disabled (not disabled) so they keep focus at a limit.
+ * Disabled keeps 8.9:1 text; the sage border only marks the state.
+ */
+export const toolSecondary = `${toolButton} border-2 border-ink bg-white text-ink aria-disabled:border-sage aria-disabled:text-muted disabled:border-sage disabled:text-muted`;
 
 export const toolPrimary = `${toolButton} bg-ink text-white`;
 

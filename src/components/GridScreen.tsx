@@ -1,4 +1,4 @@
-import { useId, type ReactNode } from "react";
+import { useId, useRef, type ReactNode } from "react";
 import { useTranslations } from "use-intl";
 import { progress, queue, roundName } from "../engine/play";
 import { MAX_TABLES, MIN_TABLES, type Match, type Tournament } from "../engine/types";
@@ -52,7 +52,7 @@ export function GridScreen({
     <div className="flex w-full max-w-[90rem] flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-0.5">
-          <h1 id={id} className="text-[1.625rem] font-extrabold tracking-[-0.02em]">
+          <h1 id={id} tabIndex={-1} data-autofocus={finished ? undefined : true} className="text-[1.625rem] font-extrabold tracking-[-0.02em]">
             {t("title")}
           </h1>
           <p className="text-lg font-semibold">
@@ -61,7 +61,7 @@ export function GridScreen({
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {!finished && <TableCount count={tournament.tables.length} onTables={onTables} />}
-          <button type="button" onClick={onUndo} disabled={!canUndo} aria-label={t("undoLabel")} className={cx(toolSecondary, "flex items-center gap-2")}>
+          <button type="button" onClick={() => canUndo && onUndo()} aria-disabled={!canUndo} aria-label={t("undoLabel")} className={cx(toolSecondary, "flex items-center gap-2")}>
             <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 14L4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3" />
             </svg>
@@ -115,8 +115,8 @@ function TableCount({ count, onTables }: { count: number; onTables: (delta: 1 | 
       <button
         type="button"
         aria-label={t("setup.fewerTables")}
-        disabled={count <= MIN_TABLES}
-        onClick={() => onTables(-1)}
+        aria-disabled={count <= MIN_TABLES}
+        onClick={() => count > MIN_TABLES && onTables(-1)}
         className={cx(toolSecondary, "w-14 px-0 text-[1.875rem]")}
       >
         −
@@ -127,8 +127,8 @@ function TableCount({ count, onTables }: { count: number; onTables: (delta: 1 | 
       <button
         type="button"
         aria-label={t("setup.moreTables")}
-        disabled={count >= MAX_TABLES}
-        onClick={() => onTables(1)}
+        aria-disabled={count >= MAX_TABLES}
+        onClick={() => count < MAX_TABLES && onTables(1)}
         className={cx(toolSecondary, "w-14 px-0 text-[1.875rem]")}
       >
         +
@@ -157,58 +157,61 @@ function TableTile({
   const id = useId();
   const number = index + 1;
 
-  if (match === null || match.a === null || match.b === null) {
-    return (
-      <article aria-labelledby={id} className="flex min-h-40 flex-col gap-2.5 rounded-tile border-[3px] border-free bg-free p-[1.125rem]">
-        <h2 id={id} className="text-[1.625rem] font-extrabold">
-          {t("table", { number })}
-        </h2>
-        <p className="flex flex-1 items-center justify-center text-[1.625rem] font-bold">{t("free")}</p>
-      </article>
-    );
-  }
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const players = match !== null && match.a !== null && match.b !== null ? [match.a, match.b] : null;
 
-  const players = [match.a, match.b];
+  // The heading stays the same element whether the table is busy or free, so it can keep focus
+  // after a tap replaces the name buttons with the next match.
   return (
     <article
       aria-labelledby={id}
       className={cx(
-        "flex flex-col gap-2.5 rounded-tile border-[3px] p-[1.125rem]",
-        isNew ? "border-ink bg-lime" : "border-white bg-white",
+        "flex min-h-40 flex-col gap-2.5 rounded-tile border-[3px] p-[1.125rem]",
+        players === null ? "border-free bg-free" : isNew ? "border-ink bg-lime" : "border-white bg-white",
       )}
     >
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-        <h2 id={id} className="text-[1.625rem] font-extrabold">
+        <h2 id={id} ref={headingRef} tabIndex={-1} className="text-[1.625rem] font-extrabold">
           {t("table", { number })}
         </h2>
-        <p className="flex flex-wrap items-center gap-2 text-lg font-bold">
-          {isNew && <span className="rounded-lg bg-ink px-2 text-white">{t("new")}</span>}
-          <span>{roundLabel(tournament, match.round)}</span>
-        </p>
+        {match !== null && players !== null && (
+          <p className="flex flex-wrap items-center gap-2 text-lg font-bold">
+            {isNew && <span className="rounded-lg bg-ink px-2 text-white">{t("new")}</span>}
+            <span>{roundLabel(tournament, match.round)}</span>
+          </p>
+        )}
       </div>
-      <div className="flex flex-col gap-2">
-        {players.map((playerId, i) => {
-          const name = tournament.players[playerId].name;
-          return (
-            <div key={playerId} className="contents">
-              {i === 1 && <span className="text-center text-lg font-semibold text-muted">{t("versus")}</span>}
-              <button
-                type="button"
-                aria-label={t("winsAt", { name, table: number })}
-                onClick={() => onPick(index, match.id, playerId)}
-                className="flex min-h-[4.75rem] w-full items-center justify-between gap-2 rounded-button border-2 border-ink bg-white px-4 py-2 text-left active:bg-mist"
-              >
-                <span className={cx("min-w-0 font-extrabold leading-[1.05] tracking-[-0.02em] [overflow-wrap:anywhere]", nameClass)}>
-                  {name}
-                </span>
-                <svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" className="shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12l5 5 9-10" />
-                </svg>
-              </button>
-            </div>
-          );
-        })}
-      </div>
+      {match === null || players === null ? (
+        <p className="flex flex-1 items-center justify-center text-[1.625rem] font-bold">{t("free")}</p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {players.map((playerId, i) => {
+            const name = tournament.players[playerId].name;
+            return (
+              <div key={playerId} className="contents">
+                {i === 1 && <span className="text-center text-lg font-semibold text-muted">{t("versus")}</span>}
+                <button
+                  type="button"
+                  aria-label={t("winsAt", { name, table: number })}
+                  onClick={() => {
+                    // Keyboard and screen-reader users stay on this table instead of losing focus.
+                    headingRef.current?.focus({ preventScroll: true });
+                    onPick(index, match.id, playerId);
+                  }}
+                  className="flex min-h-[4.75rem] w-full items-center justify-between gap-2 rounded-button border-2 border-ink bg-white px-4 py-2 text-left active:bg-mist"
+                >
+                  <span className={cx("min-w-0 font-extrabold leading-[1.05] tracking-[-0.02em] [overflow-wrap:anywhere]", nameClass)}>
+                    {name}
+                  </span>
+                  <svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" className="shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 12l5 5 9-10" />
+                  </svg>
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </article>
   );
 }
@@ -289,7 +292,7 @@ function ChampionCard({ tournament }: { tournament: Tournament }) {
 
   return (
     <section aria-labelledby={id} className="flex min-w-0 flex-1 flex-col gap-4 rounded-card bg-mint p-6 sm:p-10 lg:p-14">
-      <h2 id={id} className="flex flex-col gap-3">
+      <h2 id={id} tabIndex={-1} data-autofocus className="flex flex-col gap-3">
         <span className="text-[1.75rem] font-bold sm:text-[2rem]">{t("title")}</span>{" "}
         <span className="text-[3.5rem] font-extrabold leading-[0.95] tracking-[-0.04em] [overflow-wrap:anywhere] sm:text-[6rem] xl:text-[8rem]">
           {name(tournament.champion)}
