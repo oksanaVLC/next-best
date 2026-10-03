@@ -1,8 +1,8 @@
 import { nameKey } from "./parsePlayers";
 import { advanceWinnerInPlace, assignTablesInPlace } from "./play";
 import {
-  MAX_PLAYERS,
   MAX_TABLES,
+  MIN_BRACKET_SIZE,
   MIN_PLAYERS,
   MIN_TABLES,
   type Match,
@@ -11,15 +11,15 @@ import {
   type Tournament,
 } from "./types";
 
-/** Next power of two, minimum 8: 5–8 → 8, 9–16 → 16, 17–30 → 32. */
-export function bracketSizeFor(playerCount: number): 8 | 16 | 32 {
-  if (playerCount <= 8) return 8;
-  if (playerCount <= 16) return 16;
-  return 32;
+/** Next power of two, minimum 8: 5–8 → 8, 9–16 → 16, 17–32 → 32, 33–64 → 64… */
+export function bracketSizeFor(playerCount: number): number {
+  let size = MIN_BRACKET_SIZE;
+  while (size < playerCount) size *= 2;
+  return size;
 }
 
 /**
- * Standard seed order, generated recursively: 8 → [1, 8, 4, 5, 2, 7, 3, 6].
+ * Standard seed order, built by repeated doubling (no recursion): 8 → [1, 8, 4, 5, 2, 7, 3, 6].
  * Neighbours form round-1 pairs, and each pair sums to size + 1.
  */
 export function seedOrder(size: number): number[] {
@@ -42,8 +42,8 @@ export function shuffle<T>(items: readonly T[], rng: Rng): T[] {
 }
 
 function validate(names: readonly string[], tableCount: number): void {
-  if (names.length < MIN_PLAYERS || names.length > MAX_PLAYERS) {
-    throw new RangeError(`Need ${MIN_PLAYERS}–${MAX_PLAYERS} players, got ${names.length}`);
+  if (names.length < MIN_PLAYERS) {
+    throw new RangeError(`Need at least ${MIN_PLAYERS} players, got ${names.length}`);
   }
   const seen = new Set<string>();
   for (const name of names) {

@@ -19,7 +19,6 @@
     "playersHint": "Uno por línea o separados por comas",
     "countOk": "{count, plural, one {# jugador} other {# jugadores}}",
     "countTooFew": "{count, plural, one {# jugador} other {# jugadores}}: añade al menos {min}",
-    "countTooMany": "{count, plural, one {# jugador} other {# jugadores}}: máximo {max}, quita los que sobren",
     "duplicates": "{count, plural, one {Se quitó # nombre repetido} other {Se quitaron # nombres repetidos}}",
     "tablesLabel": "Número de mesas",
     "fewerTables": "Menos mesas",

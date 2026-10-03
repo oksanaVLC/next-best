@@ -72,7 +72,7 @@ describe("setup form", () => {
     expect(startButton().hasAttribute("disabled")).toBe(true);
   });
 
-  it("validates 5–30 players with live counts", () => {
+  it("needs at least 5 players, with no maximum, and shows live counts", () => {
     renderApp();
     const cases: [number, string, boolean][] = [
       [4, "4 игрока — добавьте минимум 5", false],
@@ -80,7 +80,10 @@ describe("setup form", () => {
       [21, "21 игрок", true],
       [22, "22 игрока", true],
       [30, "30 игроков", true],
-      [31, "31 игрок — максимум 30, уберите лишних", false],
+      [31, "31 игрок", true],
+      [101, "101 игрок", true],
+      [112, "112 игроков", true],
+      [250, "250 игроков", true],
     ];
     for (const [count, text, valid] of cases) {
       typeNames(names(count).join("\n"));

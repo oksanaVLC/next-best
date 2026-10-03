@@ -11,7 +11,7 @@ function keyPaths(value: unknown, prefix = ""): string[] {
 const ENGLISH_UI_WORDS =
   /\b(Table|Tables|Free|Waiting|Results|Undo|Champion|Start|Players|Player|Continue|Cancel|Round|wins|beat|Tournament|New|Delete|Yes|Back|Error|Loading)\b/;
 
-const PARAMS = { count: 3, min: 5, max: 30, played: 1, total: 11, left: 8, number: 2, table: 2, round: 1, name: "Anna", a: "Anna", b: "Maria", winner: "Anna", loser: "Maria", players: 12, matches: 11, w: (chunks: string) => chunks, l: (chunks: string) => chunks };
+const PARAMS = { count: 3, min: 5, max: 16, played: 1, total: 11, left: 8, number: 2, table: 2, round: 1, name: "Anna", a: "Anna", b: "Maria", winner: "Anna", loser: "Maria", players: 12, matches: 11, w: (chunks: string) => chunks, l: (chunks: string) => chunks };
 
 describe("messages", () => {
   it("ru and es have exactly the same keys", () => {
@@ -69,7 +69,7 @@ describe("detectLang", () => {
 
 // --- Step 6: plural forms, placeholders and script checks ---------------------------------
 
-const RU_COUNTS = [0, 1, 2, 4, 5, 11, 21, 22, 25];
+const RU_COUNTS = [0, 1, 2, 4, 5, 11, 21, 22, 25, 101, 111, 112, 121, 122, 249, 250];
 /** Russian plural category, written out by hand (not via Intl) so the test is independent. */
 function ruForm<T>(n: number, one: T, few: T, many: T): T {
   if (n % 10 === 1 && n % 100 !== 11) return one;
@@ -77,7 +77,7 @@ function ruForm<T>(n: number, one: T, few: T, many: T): T {
   return many;
 }
 
-describe("Russian plurals for 0, 1, 2, 4, 5, 11, 21, 22, 25", () => {
+describe("Russian plurals for small and large counts (0–25, 101–122, 249, 250)", () => {
   const t = createTranslator({ locale: "ru", messages: messages.ru });
   const cases: [string, (n: number) => string, (n: number) => string][] = [
     ["common.players", (n) => t("common.players", { count: n }), (n) => `${n} ${ruForm(n, "игрок", "игрока", "игроков")}`],

@@ -1,6 +1,6 @@
-import { MAX_PLAYERS, MIN_PLAYERS } from "./types";
+import { MIN_PLAYERS } from "./types";
 
-export type PlayerCountStatus = "ok" | "tooFew" | "tooMany";
+export type PlayerCountStatus = "ok" | "tooFew";
 
 export type ParsedPlayers = {
   names: string[]; // clean, unique, in input order
@@ -39,7 +39,5 @@ export function parsePlayers(text: string): ParsedPlayers {
 }
 
 export function playerCountStatus(count: number): PlayerCountStatus {
-  if (count < MIN_PLAYERS) return "tooFew";
-  if (count > MAX_PLAYERS) return "tooMany";
-  return "ok";
+  return count < MIN_PLAYERS ? "tooFew" : "ok";
 }

@@ -117,10 +117,10 @@ describe.each(["ru", "es"] as const)("%s interface", (lang) => {
     expectOnlyLanguage(lang, "invalid setup");
     expectNamedControls("setup");
 
-    const many = Array.from({ length: 31 }, (_, i) => `${names[i % names.length]} ${i}`);
+    const many = Array.from({ length: 250 }, (_, i) => `${names[i % names.length]} ${i}`);
     fireEvent.change(screen.getByRole("textbox", { name: t("setup.playersLabel") }), { target: { value: many.join("\n") } });
-    expect(screen.getByText(t("setup.countTooMany", { count: 31, max: 30 }))).toBeTruthy();
-    expectOnlyLanguage(lang, "too many players");
+    expect(screen.getByText(t("setup.countOk", { count: 250 }))).toBeTruthy(); // no maximum
+    expectOnlyLanguage(lang, "many players");
   });
 
   it("resume, confirm New, grid with waiting/results/busy table, and champion", () => {

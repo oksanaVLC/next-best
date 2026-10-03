@@ -1,7 +1,7 @@
 import { useId, useMemo, useState } from "react";
 import { useTranslations } from "use-intl";
 import { parsePlayers } from "../engine/parsePlayers";
-import { DEFAULT_TABLES, MAX_PLAYERS, MAX_TABLES, MIN_PLAYERS, MIN_TABLES } from "../engine/types";
+import { DEFAULT_TABLES, MAX_TABLES, MIN_PLAYERS, MIN_TABLES } from "../engine/types";
 import { parseTableInput, stepTableInput } from "../lib/tableInput";
 import { card, cardTitle, cx, primaryButton } from "./ui";
 
@@ -21,12 +21,7 @@ export function SetupScreen({ onStart }: { onStart: (names: string[], tables: nu
   // An empty box is a neutral hint, not an error.
   const playersError = parsed.status !== "ok" && count > 0;
 
-  const countText =
-    parsed.status === "ok"
-      ? t("countOk", { count })
-      : parsed.status === "tooFew"
-        ? t("countTooFew", { count, min: MIN_PLAYERS })
-        : t("countTooMany", { count, max: MAX_PLAYERS });
+  const countText = parsed.status === "ok" ? t("countOk", { count }) : t("countTooFew", { count, min: MIN_PLAYERS });
 
   return (
     <section className={card} aria-labelledby={`${id}-title`}>

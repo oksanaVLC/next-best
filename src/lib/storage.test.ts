@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createTournament } from "../engine/bracket";
-import { pickWinner, pushHistory, setTableCount } from "../engine/play";
+import { pickWinner, pushHistory, setTableCount, undo } from "../engine/play";
 import type { AppState, Tournament } from "../engine/types";
 import { clearState, loadState, saveState, STORAGE_KEY } from "./storage";
 
@@ -8,11 +8,22 @@ import { clearState, loadState, saveState, STORAGE_KEY } from "./storage";
 
 const NOW = "2026-01-01T12:00:00.000Z";
 
-/** In-memory localStorage; can be told to throw like a blocked or full browser storage. */
+/**
+ * In-memory localStorage; can be told to throw like a blocked or full browser storage.
+ * `quota` limits the total characters of keys + values, as browsers do; replacing a value only
+ * counts the new one.
+ */
 class MemoryStorage {
   data = new Map<string, string>();
   failGet = false;
   failSet = false;
+  quota = Infinity;
+  writes = 0;
+  used(except?: string) {
+    let total = 0;
+    for (const [k, v] of this.data) if (k !== except) total += k.length + v.length;
+    return total;
+  }
   get length() {
     return this.data.size;
   }
@@ -30,7 +41,9 @@ class MemoryStorage {
     this.data.delete(key);
   }
   setItem(key: string, value: string) {
+    this.writes++;
     if (this.failSet) throw new Error("QuotaExceededError");
+    if (this.used(key) + key.length + String(value).length > this.quota) throw new Error("QuotaExceededError");
     this.data.set(key, String(value));
   }
 }
@@ -435,8 +448,192 @@ describe("browser safety", () => {
     expect(loadState()).toEqual({ status: "unavailable" });
   });
 
-  it("returns false instead of throwing when the storage is full", () => {
+  it("returns false instead of throwing when the storage is full, keeping the previous save", () => {
+    const previous = midGameState(2);
+    saveState(previous);
     storage.failSet = true;
     expect(saveState(midGameState())).toBe(false);
+    expect(loadState()).toEqual({ status: "ok", state: previous });
+  });
+});
+
+// --- storage-size-aware Undo history -----------------------------------------------------
+
+/** A real game with `players` players and up to 50 Undo snapshots (one per pick). */
+function bigState(players: number, picks = 60): AppState {
+  let t = createTournament(names(players), 16, seededRng(players), NOW);
+  let history: string[] = [];
+  const rng = seededRng(7);
+  for (let i = 0; i < picks && !t.champion; i++) {
+    const busy = t.tables.filter((id) => id !== null);
+    const m = t.matches[busy[Math.floor(rng() * busy.length)]!];
+    history = pushHistory(history, t);
+    t = pickWinner(t, m.id, rng() < 0.5 ? m.a! : m.b!, NOW);
+  }
+  return { tournament: t, history, lang: "es" };
+}
+
+/** Exactly what an unlimited save writes for `state` with only its newest `kept` snapshots. */
+function encoded(state: AppState, kept: number): string {
+  return JSON.stringify({ ...state, history: kept === 0 ? [] : state.history.slice(-kept) });
+}
+
+const keyAnd = (value: string) => STORAGE_KEY.length + value.length;
+/** About what browsers allow per site (5 million UTF-16 characters). */
+const BROWSER_QUOTA = 5_000_000;
+
+describe("storage-size-aware Undo history", () => {
+  it("keeps all 50 snapshots, byte-for-byte as before, when they fit", () => {
+    const state = bigState(64);
+    expect(state.history).toHaveLength(50);
+    storage.quota = keyAnd(encoded(state, 50)); // exactly enough
+    expect(saveState(state)).toBe(true);
+    expect(storage.data.get(STORAGE_KEY)).toBe(JSON.stringify(state));
+    expect(storage.writes).toBe(1); // no extra attempts when everything fits
+    expect(loadState()).toEqual({ status: "ok", state });
+  });
+
+  it("under pressure keeps as many of the newest snapshots as fit, dropping the oldest", () => {
+    const state = bigState(40);
+    for (const fits of [0, 1, 17, 49]) {
+      storage.clear();
+      storage.quota = keyAnd(encoded(state, fits)) + 10; // room for `fits` snapshots, not one more
+      expect(saveState(state), `${fits} fit`).toBe(true);
+      const result = loadState();
+      if (result.status !== "ok") throw new Error("expected ok");
+      expect(result.state.tournament).toEqual(state.tournament);
+      expect(result.state.lang).toBe("es");
+      expect(result.state.history).toEqual(fits === 0 ? [] : state.history.slice(-fits));
+    }
+  });
+
+  it("always saves the current tournament, even when no history fits at all", () => {
+    const state = bigState(250);
+    storage.quota = keyAnd(encoded(state, 0));
+    expect(saveState(state)).toBe(true);
+    expect(loadState()).toEqual({ status: "ok", state: { ...state, history: [] } });
+  });
+
+  it("fails only when even the tournament alone does not fit, and keeps the previous save", () => {
+    const previous = bigState(30, 3);
+    saveState(previous);
+    const state = bigState(250);
+    storage.quota = keyAnd(encoded(state, 0)) - 1;
+    expect(saveState(state)).toBe(false);
+    expect(loadState()).toEqual({ status: "ok", state: previous });
+  });
+
+  it("replaces a large earlier save instead of counting it against the new one", () => {
+    const state = bigState(129);
+    storage.quota = keyAnd(encoded(state, 50)) + 10;
+    expect(saveState(state)).toBe(true);
+    expect(saveState(state)).toBe(true); // overwriting a full-size save still fits
+    expect(JSON.parse(storage.data.get(STORAGE_KEY)!).history).toHaveLength(50);
+  });
+
+  it("other data in the same storage leaves less room for history, never for the tournament", () => {
+    const state = bigState(64);
+    storage.quota = keyAnd(encoded(state, 50));
+    storage.setItem("other-app", "x".repeat(keyAnd(encoded(state, 50)) - keyAnd(encoded(state, 10))));
+    expect(saveState(state)).toBe(true);
+    const result = loadState();
+    if (result.status !== "ok") throw new Error("expected ok");
+    expect(result.state.tournament).toEqual(state.tournament);
+    expect(result.state.history.length).toBeLessThan(10);
+    expect(result.state.history).toEqual(state.history.slice(-result.state.history.length));
+    expect(storage.data.get("other-app")).toBeDefined();
+  });
+
+  it("does not change the caller's in-memory history when storage trims it", () => {
+    const state = bigState(40);
+    const before = [...state.history];
+    storage.quota = keyAnd(encoded(state, 5)) + 10;
+    deepFreeze(state);
+    expect(saveState(state)).toBe(true);
+    expect(state.history).toEqual(before);
+  });
+
+  it("needs only a few write attempts when trimming", () => {
+    const state = bigState(40);
+    storage.quota = keyAnd(encoded(state, 23)) + 10;
+    expect(saveState(state)).toBe(true);
+    expect(storage.writes).toBeLessThanOrEqual(1 + Math.ceil(Math.log2(51)));
+    expect(JSON.parse(storage.data.get(STORAGE_KEY)!).history).toHaveLength(23);
+  });
+
+  it.each([100, 250, 500, 1000])("%i players in a browser-sized storage: saves, reloads and Undo still works", (players) => {
+    const state = bigState(players);
+    storage.quota = BROWSER_QUOTA;
+    expect(saveState(state)).toBe(true);
+    expect(storage.used()).toBeLessThanOrEqual(BROWSER_QUOTA);
+
+    const result = loadState();
+    if (result.status !== "ok") throw new Error("expected ok");
+    const { tournament, history } = result.state;
+    expect(tournament).toEqual(state.tournament);
+    expect(history.length).toBeGreaterThan(0);
+    expect(history).toEqual(state.history.slice(-history.length));
+
+    // Undo after a reload restores the state before the last pick, and play continues from there.
+    const restored = undo(history)!;
+    expect(restored.tournament).toEqual(JSON.parse(state.history[state.history.length - 1]));
+    const t = restored.tournament;
+    const m = t.matches[t.tables.find((id) => id !== null)!];
+    expect(pickWinner(t, m.id, m.a!, NOW).log).toHaveLength(t.log.length + 1);
+  });
+
+  it("a whole 129-player tournament (bracket 256) in a tight storage: every save succeeds, history shrinks as it must", () => {
+    storage.quota = 1_000_000; // forces trimming once the history grows
+    let trimmed = 0;
+    let state: AppState = { tournament: createTournament(names(129), 16, seededRng(5), NOW), history: [], lang: "ru" };
+    expect(saveState(state)).toBe(true);
+    const rng = seededRng(11);
+    while (!state.tournament!.champion) {
+      const t = state.tournament!;
+      const busy = t.tables.filter((id) => id !== null);
+      const m = t.matches[busy[Math.floor(rng() * busy.length)]!];
+      state = { ...state, tournament: pickWinner(t, m.id, rng() < 0.5 ? m.a! : m.b!, NOW), history: pushHistory(state.history, t) };
+      expect(saveState(state)).toBe(true);
+      const kept = JSON.parse(storage.data.get(STORAGE_KEY)!).history.length;
+      if (kept < state.history.length) trimmed++;
+    }
+    expect(trimmed).toBeGreaterThan(0);
+    const result = loadState();
+    if (result.status !== "ok") throw new Error("expected ok");
+    expect(result.state.tournament).toEqual(state.tournament);
+    expect(result.state.tournament!.champion).not.toBeNull();
+    expect(result.state.history.length).toBeGreaterThan(0);
+  });
+});
+
+describe("any bracket size, old v1 data still loads", () => {
+  it.each([
+    [5, 8],
+    [12, 16],
+    [30, 32],
+    [31, 32],
+    [64, 64],
+    [65, 128],
+    [250, 256],
+  ])("%i players (bracket %i) written in the v1 format", (players, size) => {
+    const state = bigState(players, 3);
+    expect(state.tournament!.bracketSize).toBe(size);
+    storage.setItem(STORAGE_KEY, JSON.stringify(state)); // exactly the old saveState output
+    expect(loadState()).toEqual({ status: "ok", state });
+  });
+
+  it("rejects a bracket size that does not belong to the player count", () => {
+    for (const bracketSize of [12, 32, 64, 4, 0, "16", null]) {
+      storeCorrupted((d) => void (d.tournament.bracketSize = bracketSize)); // 12 players -> 16
+      expect(loadState(), String(bracketSize)).toEqual(INVALID);
+    }
+  });
+
+  it("rejects fewer than 5 players", () => {
+    storeCorrupted((d) => {
+      const players = d.tournament.players as Record<string, unknown>;
+      for (const id of Object.keys(players).slice(4)) delete players[id];
+    });
+    expect(loadState()).toEqual(INVALID);
   });
 });

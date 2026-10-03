@@ -1,8 +1,8 @@
 // Pure data model of a knockout tournament (CLAUDE.md §4).
 // Everything here is plain JSON so it can be stored and restored as-is.
 
-export const MIN_PLAYERS = 5;
-export const MAX_PLAYERS = 30;
+export const MIN_PLAYERS = 5; // no maximum: the bracket grows to the next power of two
+export const MIN_BRACKET_SIZE = 8;
 export const MIN_TABLES = 1;
 export const MAX_TABLES = 16;
 export const DEFAULT_TABLES = 4;
@@ -41,7 +41,7 @@ export type Tournament = {
   players: Record<string, Player>;
   matches: Record<string, Match>;
   rounds: number;
-  bracketSize: 8 | 16 | 32;
+  bracketSize: number; // power of two, at least 8
   tables: (string | null)[]; // matchId per table, null = free
   champion: string | null;
   log: LogEntry[]; // oldest first

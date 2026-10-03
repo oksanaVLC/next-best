@@ -2,7 +2,8 @@
 // Browser-only at call time; importing this module is safe during build and SSR.
 // Never throws: problems come back as results the UI can show.
 
-import { HISTORY_LIMIT, type AppState, type Tournament } from "../engine/types";
+import { bracketSizeFor } from "../engine/bracket";
+import { HISTORY_LIMIT, MAX_TABLES, MIN_PLAYERS, MIN_TABLES, type AppState, type Tournament } from "../engine/types";
 
 export const STORAGE_KEY = "knockout:v1";
 
@@ -24,21 +25,47 @@ function getStorage(): Storage | null {
   }
 }
 
-/** Save the whole app state as plain JSON, keeping only the last 50 snapshots. Returns false if it could not be written. */
+/**
+ * Save the whole app state as plain JSON with up to the last 50 Undo snapshots.
+ *
+ * Undo history is storage-size-aware: when everything does not fit (QuotaExceededError on a big
+ * tournament), the oldest snapshots are dropped until it does — down to no history at all — so
+ * the current tournament is always saved. Returns false only if even that cannot be written;
+ * the previously saved state is then left untouched.
+ */
 export function saveState(state: AppState): boolean {
   const storage = getStorage();
   if (!storage) return false;
-  const stored: AppState = {
-    tournament: state.tournament,
-    history: state.history.slice(-HISTORY_LIMIT),
-    lang: state.lang,
+
+  // Encode once; each attempt below only joins strings.
+  const head = `{"tournament":${JSON.stringify(state.tournament)},"history":[`;
+  const tail = `],"lang":${JSON.stringify(state.lang)}}`;
+  const snapshots = state.history.slice(-HISTORY_LIMIT).map((s) => JSON.stringify(s));
+  const write = (kept: number): boolean => {
+    try {
+      storage.setItem(STORAGE_KEY, head + snapshots.slice(snapshots.length - kept).join(",") + tail);
+      return true;
+    } catch {
+      return false; // e.g. QuotaExceededError
+    }
   };
-  try {
-    storage.setItem(STORAGE_KEY, JSON.stringify(stored));
-    return true;
-  } catch {
-    return false; // e.g. QuotaExceededError
+
+  if (write(snapshots.length)) return true;
+  // Largest number of newest snapshots that fits. Fewer snapshots are always smaller, and a failed
+  // write changes nothing, so the last successful write (the largest count) is what stays stored.
+  let saved = false;
+  let low = 0;
+  let high = snapshots.length - 1;
+  while (low <= high) {
+    const kept = (low + high) >> 1;
+    if (write(kept)) {
+      saved = true;
+      low = kept + 1;
+    } else {
+      high = kept - 1;
+    }
   }
+  return saved;
 }
 
 /** Load and validate the saved app state. Always returns fresh objects. */
@@ -134,12 +161,13 @@ function isInt(v: unknown, min: number, max: number): v is number {
 function isTournamentV1(t: JsonRecord): t is Tournament {
   const { players, matches, tables, log, bracketSize, rounds } = t;
   if (typeof t.createdAt !== "string") return false;
-  if (bracketSize !== 8 && bracketSize !== 16 && bracketSize !== 32) return false;
-  if (rounds !== Math.log2(bracketSize)) return false;
 
   if (!isRecord(players)) return false;
   const playerIds = Object.keys(players);
-  if (playerIds.length < 5 || playerIds.length > 30) return false;
+  if (playerIds.length < MIN_PLAYERS) return false;
+  // Any size works, but it must be the one the engine builds for this many players.
+  if (bracketSize !== bracketSizeFor(playerIds.length)) return false;
+  if (rounds !== Math.log2(bracketSize)) return false;
   for (const id of playerIds) {
     const p = players[id];
     if (!isRecord(p) || p.id !== id || typeof p.name !== "string" || p.name === "" || typeof p.out !== "boolean") {
@@ -148,7 +176,7 @@ function isTournamentV1(t: JsonRecord): t is Tournament {
   }
   const isPlayerOrNull = (v: unknown) => v === null || (typeof v === "string" && has(players, v));
 
-  if (!Array.isArray(tables) || !isInt(tables.length, 1, 16)) return false;
+  if (!Array.isArray(tables) || !isInt(tables.length, MIN_TABLES, MAX_TABLES)) return false;
   if (!isRecord(matches) || Object.keys(matches).length !== bracketSize - 1) return false;
   for (const [id, m] of Object.entries(matches)) {
     if (!isRecord(m)) return false;
@@ -162,7 +190,7 @@ function isTournamentV1(t: JsonRecord): t is Tournament {
     if (m.table !== null && (m.a === null || m.b === null || m.a === m.b || m.winner !== null || m.loser !== null || m.bye)) {
       return false;
     }
-    if (m.playedAt !== null && !isInt(m.playedAt, 0, 15)) return false;
+    if (m.playedAt !== null && !isInt(m.playedAt, 0, MAX_TABLES - 1)) return false;
   }
   for (let i = 0; i < tables.length; i++) {
     const id: unknown = tables[i];
@@ -184,7 +212,7 @@ function isTournamentV1(t: JsonRecord): t is Tournament {
     if (!isRecord(entry)) return false;
     if (typeof entry.winner !== "string" || !has(players, entry.winner)) return false;
     if (typeof entry.loser !== "string" || !has(players, entry.loser)) return false;
-    if (!isInt(entry.table, 0, 15) || !isInt(entry.round, 1, rounds) || typeof entry.at !== "string") return false;
+    if (!isInt(entry.table, 0, MAX_TABLES - 1) || !isInt(entry.round, 1, rounds) || typeof entry.at !== "string") return false;
   }
   return true;
 }

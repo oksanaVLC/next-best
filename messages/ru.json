@@ -19,7 +19,6 @@
     "playersHint": "По одному в строке или через запятую",
     "countOk": "{count, plural, one {# игрок} few {# игрока} many {# игроков} other {# игрока}}",
     "countTooFew": "{count, plural, one {# игрок} few {# игрока} many {# игроков} other {# игрока}} — добавьте минимум {min}",
-    "countTooMany": "{count, plural, one {# игрок} few {# игрока} many {# игроков} other {# игрока}} — максимум {max}, уберите лишних",
     "duplicates": "{count, plural, one {Убрано # повторяющееся имя} few {Убрано # повторяющихся имени} many {Убрано # повторяющихся имён} other {Убрано # повторяющегося имени}}",
     "tablesLabel": "Количество столов",
     "fewerTables": "Меньше столов",

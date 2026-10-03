@@ -9,7 +9,7 @@
 
 One screen for the **person in charge** of a tennis / table-tennis knockout tournament. Several tables play at the same time.
 
-1. Paste the players' names (5–30).
+1. Paste the players' names (at least 5; no maximum).
 2. Type the **number of tables** (e.g. 4 or 7; can change during play).
 3. Press **Start**.
 4. The organizer sees a **grid with one tile per table**. Each tile shows the two players currently playing there.
@@ -85,7 +85,7 @@ type Tournament = {
   players: Record<string, Player>;
   matches: Record<string, Match>;
   rounds: number;
-  bracketSize: 8 | 16 | 32;
+  bracketSize: number; // power of two, at least 8
   tables: (string | null)[]; // matchId per table, null = free
   champion: string | null;
   log: {
@@ -104,6 +104,7 @@ type AppState = {
 ```
 
 - Save **after every action** (synchronously). Load on startup → the tournament survives refresh, closing the tab, and restarting the browser.
+- Undo history in storage is **size-aware**: if the full state does not fit in localStorage (big tournaments, little space left), drop the oldest snapshots until it does — down to none. The current tournament is always saved; saving fails only if the tournament alone does not fit, and then the previous save is left untouched. In-memory Undo in the open tab is not trimmed.
 - If stored data is corrupt or an unknown version → don't crash; show "Could not restore the tournament" + New tournament.
 - Keep the model plain JSON so a backend can be added later without changing the engine.
 - Optional: listen to the `storage` event so a second tab on the same computer (e.g. on a projector) updates too.
@@ -114,12 +115,12 @@ type AppState = {
 
 ### Setup
 
-- `parsePlayers`: split on new lines and commas, trim, collapse spaces, drop empties, remove duplicates (case-insensitive, keep first), report how many duplicates were removed. Valid: 5–30 names.
+- `parsePlayers`: split on new lines and commas, trim, collapse spaces, drop empties, remove duplicates (case-insensitive, keep first), report how many duplicates were removed. Valid: at least 5 names, no maximum.
 - Table count: 1–16, default 4.
 
 ### Bracket
 
-- `bracketSize` = next power of two, minimum 8 (5–8 → 8, 9–16 → 16, 17–30 → 32). Rounds = log2(size).
+- `bracketSize` = next power of two, minimum 8 (5–8 → 8, 9–16 → 16, 17–32 → 32, 33–64 → 64, …, 129–256 → 256). Rounds = log2(size).
 - Shuffle names (injected rng). Place them in the standard seed order (1v8, 4v5, 2v7, 3v6 … generated recursively) so BYEs go to the top seeds and a **BYE never faces a BYE**.
 - BYE matches are completed at creation; the player moves to round 2. BYEs are invisible to the organizer and are not counted as matches.
 - Real matches = **N − 1**. Number them 1..N−1 by round, then position.
@@ -141,7 +142,7 @@ Every player in round 1 exactly once (or as a BYE recipient) · no self-matches 
 
 ### Tests (`engine.test.ts`)
 
-For **every N from 5 to 30** × table counts **1, 2, 4, 7, 16** × several rng seeds: play the whole tournament choosing random winners on random busy tables; assert all invariants after each step and exactly one champion at the end. Plus: parsing (commas, blank lines, spaces, duplicates), double tap, adding/removing tables mid-game, Undo back to the start.
+For **every N from 5 to 33, plus samples around each bracket boundary up to 257 and one 500-player run** × table counts **1, 2, 4, 7, 16** × several rng seeds (fewer combinations for large N): play the whole tournament choosing random winners on random busy tables; assert all invariants after each step and exactly one champion at the end. Plus: parsing (commas, blank lines, spaces, duplicates), double tap, adding/removing tables mid-game, Undo back to the start.
 E2E smoke: setup 12 players + 7 tables → play to champion → refresh mid-way keeps state.
 
 ---
@@ -150,7 +151,7 @@ E2E smoke: setup 12 players + 7 tables → play to champion → refresh mid-way 
 
 ### Setup
 
-Title, big textarea for names, live count ("12 players" / "add at least 5" / "maximum 30"), "Number of tables" with big − / + buttons (and the number can be typed), **Start tournament** (disabled until valid). If a saved tournament exists: "Continue tournament" / "New tournament".
+Title, big textarea for names, live count ("12 players" / "add at least 5"), "Number of tables" with big − / + buttons (and the number can be typed), **Start tournament** (disabled until valid). If a saved tournament exists: "Continue tournament" / "New tournament".
 
 ### Tables grid (main screen)
 
@@ -220,7 +221,7 @@ After each step: `npm run test` and `npm run build`, then commit.
 
 ## 10. Done when
 
-- 5–30 players with 1–16 tables always end with exactly one champion (tests).
+- 5 or more players (tested up to 500) with 1–16 tables always end with exactly one champion (tests).
 - Tapping a name updates the grid instantly; a free table is never left empty while a match is waiting.
 - Refresh / closing the browser never loses the tournament.
 - Double tap never advances twice; Undo fixes a wrong tap.

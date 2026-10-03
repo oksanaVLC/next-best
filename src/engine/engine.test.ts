@@ -19,6 +19,14 @@ import type { Match, Rng, Tournament } from "./types";
 const NOW = "2026-01-01T12:00:00.000Z";
 const TABLE_COUNTS = [1, 2, 4, 7, 16];
 const SEEDS = [1, 2, 3, 42, 2026];
+/** There is no maximum: every N up to 33, then samples around each bracket boundary up to 257. */
+const PLAYER_COUNTS = [
+  ...Array.from({ length: 29 }, (_, i) => i + 5),
+  ...[63, 64, 65, 100, 127, 128, 129, 250, 255, 256, 257],
+];
+/** A full simulation costs ~N² with checks after every step, so large N use fewer combinations. */
+const tableCountsFor = (n: number) => (n <= 65 ? TABLE_COUNTS : [1, 7, 16]);
+const seedsFor = (n: number) => (n <= 65 ? SEEDS : SEEDS.slice(0, 1));
 
 /** Deterministic PRNG (mulberry32). */
 function seededRng(seed: number): Rng {
@@ -154,8 +162,9 @@ function invariantErrors(t: Tournament): string[] {
   }
   // Each log entry describes exactly one finished match: same players, round and table
   const logged = new Set<string>();
+  const byResult = new Map(finished.map((m) => [`${m.winner}>${m.loser}`, m])); // keeps large N fast
   t.log.forEach((entry, i) => {
-    const m = finished.find((x) => x.winner === entry.winner && x.loser === entry.loser);
+    const m = byResult.get(`${entry.winner}>${entry.loser}`);
     if (!m) return void errors.push(`log[${i}] matches no result`);
     if (logged.has(m.id)) errors.push(`match ${m.id} logged twice`);
     logged.add(m.id);
@@ -264,11 +273,14 @@ describe("parsePlayers", () => {
     expect(parsePlayers(" \n , \n")).toEqual({ names: [], duplicatesRemoved: 0, status: "tooFew" });
   });
 
-  it("validates 5–30 names", () => {
+  it("needs at least 5 names and has no maximum", () => {
     expect(parsePlayers(makeNames(4).join("\n")).status).toBe("tooFew");
     expect(parsePlayers(makeNames(5).join("\n")).status).toBe("ok");
     expect(parsePlayers(makeNames(30).join(",")).status).toBe("ok");
-    expect(parsePlayers(makeNames(31).join("\n")).status).toBe("tooMany");
+    expect(parsePlayers(makeNames(31).join("\n")).status).toBe("ok");
+    const many = parsePlayers(makeNames(1000).join("\n"));
+    expect(many.status).toBe("ok");
+    expect(many.names).toHaveLength(1000);
   });
 
   it("counts only unique names for validation", () => {
@@ -282,15 +294,23 @@ describe("parsePlayers", () => {
 
 describe("bracket", () => {
   it("bracket size is the next power of two, minimum 8", () => {
-    for (let n = 5; n <= 30; n++) {
-      expect(bracketSizeFor(n)).toBe(n <= 8 ? 8 : n <= 16 ? 16 : 32);
+    for (let n = 5; n <= 2050; n++) {
+      const size = bracketSizeFor(n);
+      expect(Number.isInteger(Math.log2(size))).toBe(true);
+      expect(size).toBeGreaterThanOrEqual(Math.max(8, n));
+      if (size > 8) expect(size / 2).toBeLessThan(n);
     }
+    const boundaries: [number, number][] = [
+      [5, 8], [8, 8], [9, 16], [16, 16], [17, 32], [30, 32], [32, 32], [33, 64], [64, 64], [65, 128],
+      [100, 128], [128, 128], [129, 256], [250, 256], [256, 256], [257, 512], [1000, 1024],
+    ];
+    for (const [n, size] of boundaries) expect(bracketSizeFor(n), `${n} players`).toBe(size);
   });
 
-  it("generates the standard seed order recursively", () => {
+  it("generates the standard seed order", () => {
     expect(seedOrder(8)).toEqual([1, 8, 4, 5, 2, 7, 3, 6]);
     expect(seedOrder(16)).toEqual([1, 16, 8, 9, 4, 13, 5, 12, 2, 15, 7, 10, 3, 14, 6, 11]);
-    for (const size of [8, 16, 32]) {
+    for (const size of [8, 16, 32, 64, 128, 256, 512, 1024]) {
       const order = seedOrder(size);
       expect([...order].sort((x, y) => x - y)).toEqual(Array.from({ length: size }, (_, i) => i + 1));
       for (let i = 0; i < size; i += 2) expect(order[i] + order[i + 1]).toBe(size + 1);
@@ -306,7 +326,7 @@ describe("bracket", () => {
   });
 
   it("gives BYEs to the top seeds, never BYE vs BYE, and moves BYE players to round 2", () => {
-    for (let n = 5; n <= 30; n++) {
+    for (const n of PLAYER_COUNTS) {
       const t = start(n, 4, n);
       const size = bracketSizeFor(n);
       const seeded = shuffle(Object.keys(t.players), seededRng(n));
@@ -324,7 +344,7 @@ describe("bracket", () => {
   });
 
   it("has N-1 real matches numbered 1..N-1 by round, then position", () => {
-    for (let n = 5; n <= 30; n++) {
+    for (const n of PLAYER_COUNTS) {
       const t = start(n, 2);
       const real = Object.values(t.matches)
         .filter((m) => !m.bye)
@@ -347,6 +367,30 @@ describe("bracket", () => {
     expect(JSON.parse(JSON.stringify(t))).toEqual(t); // plain JSON
   });
 
+  it("creates large tournaments with no player maximum", () => {
+    for (const [n, size, rounds] of [
+      [31, 32, 5],
+      [64, 64, 6],
+      [100, 128, 7],
+      [250, 256, 8],
+      [1000, 1024, 10],
+    ]) {
+      const t = start(n, 16);
+      expect(t.bracketSize).toBe(size);
+      expect(t.rounds).toBe(rounds);
+      expect(Object.keys(t.matches)).toHaveLength(size - 1);
+      expect(busyTables(t).length).toBe(Math.min(16, busyTables(t).length + queue(t).length));
+      expectValid(t);
+    }
+  });
+
+  it("129 players: 127 BYEs leave one real round-1 match, and round 2 starts at once", () => {
+    const t = start(129, 16);
+    expect(Object.values(t.matches).filter((m) => m.round === 1 && !m.bye)).toHaveLength(1);
+    expect(busyTables(t).filter((i) => matchOn(t, i).round === 2)).toHaveLength(15);
+    expectValid(t);
+  });
+
   it("is deterministic for a seed and varies across seeds", () => {
     expect(start(20, 4, 5)).toEqual(start(20, 4, 5));
     const layouts = new Set(SEEDS.map((s) => JSON.stringify(start(20, 4, s).matches)));
@@ -356,7 +400,6 @@ describe("bracket", () => {
   it("rejects invalid setups", () => {
     const rng = seededRng(1);
     expect(() => createTournament(makeNames(4), 4, rng)).toThrow(RangeError);
-    expect(() => createTournament(makeNames(31), 4, rng)).toThrow(RangeError);
     expect(() => createTournament(["A", "B", "C", "D", "a"], 4, rng)).toThrow(RangeError);
     expect(() => createTournament(["A", "B", "C", "D", " "], 4, rng)).toThrow(RangeError);
     for (const tables of [0, 17, 2.5, Number.NaN]) {
@@ -770,13 +813,11 @@ describe("undo", () => {
 
 // --- full simulations -------------------------------------------------------
 
-const cases = Array.from({ length: 26 }, (_, i) => i + 5).flatMap((n) =>
-  TABLE_COUNTS.map((tables) => ({ n, tables })),
-);
+const cases = PLAYER_COUNTS.flatMap((n) => tableCountsFor(n).map((tables) => ({ n, tables })));
 
 describe("full tournaments", () => {
   it.each(cases)("$n players on $tables tables always end with one champion", ({ n, tables }) => {
-    for (const seed of SEEDS) {
+    for (const seed of seedsFor(n)) {
       let t = deepFreeze(createTournament(makeNames(n), tables, seededRng(seed), NOW));
       expectValid(t);
       const rng = seededRng(seed * 7919 + n);
@@ -793,17 +834,33 @@ describe("full tournaments", () => {
       expectFinished(t, n);
     }
   });
+
+  it("500 players on 7 tables end with one champion", () => {
+    const n = 500;
+    let t = createTournament(makeNames(n), 7, seededRng(n), NOW);
+    expectValid(t);
+    const rng = seededRng(n + 1);
+    let steps = 0;
+    while (!t.champion) {
+      t = randomPick(t, rng);
+      steps++;
+      expectValid(t);
+      if (steps > n) throw new Error("too many steps");
+    }
+    expect(steps).toBe(n - 1);
+    expectFinished(t, n);
+  });
 });
 
 describe("chaos: random winners, table changes and undo", () => {
-  it.each(Array.from({ length: 26 }, (_, i) => i + 5))("%i players", (n) => {
-    for (const seed of SEEDS) {
+  it.each(PLAYER_COUNTS)("%i players", (n) => {
+    for (const seed of seedsFor(n)) {
       const rng = seededRng(seed * 31 + n);
       let t = deepFreeze(createTournament(makeNames(n), 1 + Math.floor(rng() * 16), rng, NOW));
       let history: string[] = [];
       let guard = 0;
       while (!t.champion) {
-        if (++guard > 5000) throw new Error("did not finish");
+        if (++guard > 5000 + 100 * n) throw new Error("did not finish");
         const roll = rng();
         let next = t;
         if (roll < 0.2) {
